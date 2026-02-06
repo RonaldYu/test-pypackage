@@ -1,0 +1,5 @@
+# Install package in editable mode with dev deps: pip install -e ".[dev]"
+# Or install build deps only:
+build>=1.0.0
+pytest>=7.0.0
+pytest-cov>=4.0.0
