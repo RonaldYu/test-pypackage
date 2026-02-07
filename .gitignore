@@ -20,6 +20,7 @@ build/
 .pytest_cache/
 .coverage
 htmlcov/
+testing_reports/
 
 # IDE
 .idea/
