@@ -1,0 +1,99 @@
+name: CI (dev branch)
+
+on:
+  push:
+    branches: 
+      - dev
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+      - dev
+jobs:
+  check-merge:
+    runs-on: ubuntu-latest
+    outputs:
+      skip_workflow: ${{ steps.check.outputs.skip_workflow }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all branches
+      - id: check
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/develop" ]] && \
+             [[ "$(git log -1 --pretty=%P | wc -w)" == "2" ]] && \
+             git log -1 --pretty=%P | grep -q "$(git rev-parse origin/feature/deploy-dev)"; then
+            echo "skip_workflow=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip_workflow=false" >> $GITHUB_OUTPUT
+          fi
+
+  exec-testing:
+    name: Test & Check Results
+    runs-on: ubuntu-latest
+    needs: check-merge
+    if: needs.check-merge.outputs.skip_workflow == 'false'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package with dev dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run testing
+        run: pytest tests/ -v
+
+      - name: Upload testing reports (JUnit XML/HTML, Coverage XML/HTML)
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: testing_reports/
+          retention-days: 30
+
+      - name: Check testing results (pass rate & coverage)
+        run: python -m tests.checkresults
+
+  tag-version:
+    name: Tag with version
+    runs-on: ubuntu-latest
+    environment: dev
+    needs: exec-testing
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.TOKEN }}
+
+      - name: Compute next version (0.0.0 → 0.0.1 → 0.0.2 …)
+        id: version
+        run: |
+          LATEST=$(git tag -l 'v*' --sort=-v:refname | head -1)
+          if [ -z "$LATEST" ]; then
+            VERSION="0.0.0"
+          else
+            # Strip 'v' and increment patch: v0.0.5 → 0.0.6
+            VER="${LATEST#v}"
+            MAJOR="${VER%%.*}"
+            REST="${VER#*.}"
+            MINOR="${REST%%.*}"
+            PATCH="${REST#*.}"
+            PATCH=$((PATCH + 1))
+            VERSION="$MAJOR.$MINOR.$PATCH"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          TAG="${{ steps.version.outputs.tag }}"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
