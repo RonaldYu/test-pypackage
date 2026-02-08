@@ -28,33 +28,43 @@ jobs:
 
       - name: Get the next version
         id: version
-        uses: ./.github/actions/compute-next-version
+        uses: lhstrh/action-repo-semver@v1.1.2
         with:
-          prefix: v
+          bump: patch
+
+      - name: Set release tag (prefix defaults to v when none)
+        id: release-tag
+        run: |
+          PREFIX="${{ steps.version.outputs.prefix }}"
+          BUMP="${{ steps.version.outputs.bump }}"
+          [ -z "$PREFIX" ] && PREFIX="v"
+          
+          if [ -z "$BUMP" ]; then BUMP="0.0.0"; fi
+
+
+          echo "name=${PREFIX}${BUMP}" >> $GITHUB_OUTPUT
+          echo "version=${BUMP}" >> $GITHUB_OUTPUT
+          
 
       - name: Build package with the version
         run: |
-          echo "VER: ${{ steps.version.outputs.version }}"
-          echo "TAG: ${{ steps.version.outputs.tag }}"
-          VER="${{ steps.version.outputs.version }}"
           
-          if [ -z "$VER" ]; then
-            VER="0.0.0"
-          fi
-          sed -i "s/^version = .*/version = \"$VER\"/" pyproject.toml
+          echo "VER: ${{ steps.release-tag.outputs.version }}"
+          echo "TAG: ${{ steps.release-tag.outputs.name }}"
+          sed -i "s/^version = .*/version = \"${{ steps.release-tag.outputs.version }}\"/" pyproject.toml
           python -m build
       
       - name: Create and push version tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
-          git push origin "${{ steps.version.outputs.tag }}"
+          git tag -a "${{ steps.release-tag.outputs.name }}" -m "Release ${{ steps.release-tag.outputs.name }}"
+          git push origin "${{ steps.release-tag.outputs.name }}"
 
       - name: Create GitHub Release and upload wheel
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
+          tag_name: ${{ steps.release-tag.outputs.name }}
           files: |
             dist/*.whl
             dist/*.tar.gz
