@@ -107,6 +107,9 @@ jobs:
           name: test-reports
           path: testing_reports
 
+      - name: Zip testing reports
+        run: zip -r "testing_reports_${{ needs.build.outputs.release-version }}.zip" testing_reports
+
       - name: Download built artifacts
         uses: actions/download-artifact@v4
         with:
@@ -128,7 +131,7 @@ jobs:
           files: |
             dist/*.whl
             dist/*.tar.gz
-            testing_reports/*
+            testing_reports_${{ needs.build.outputs.release-version }}.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
