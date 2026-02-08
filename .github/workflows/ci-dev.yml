@@ -74,9 +74,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Compute next version (0.0.0 → 0.0.1 → 0.0.2 …)
+      - name: Compute next version
         id: version
         run: |
           LATEST=$(git tag -l 'v*' --sort=-v:refname | head -1)
@@ -89,6 +89,14 @@ jobs:
             MINOR="${REST%%.*}"
             PATCH="${REST#*.}"
             PATCH=$((PATCH + 1))
+            if [ "$PATCH" -gt 99 ]; then
+              PATCH=0
+              MINOR=$((MINOR + 1))
+              if [ "$MINOR" -gt 99 ]; then
+                MINOR=0
+                MAJOR=$((MAJOR + 1))
+              fi
+            fi
             VERSION="$MAJOR.$MINOR.$PATCH"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
