@@ -58,11 +58,12 @@ jobs:
 
       - name: Get the next version
         id: version
-        uses: lhstrh/action-repo-semver@v1.1.2
+        # uses: lhstrh/action-repo-semver@v1.1.2
+        uses: ./.github/actions/repo-semver
         with:
           bump: patch
 
-      - name: Set release tag (prefix defaults to v when none)
+      - name: Set release tag
         id: release-tag
         run: |
           PREFIX="${{ steps.version.outputs.prefix }}"
