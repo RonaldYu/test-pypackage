@@ -36,7 +36,7 @@ jobs:
         run: python -m tests.checkresults
 
   build:
-    name: Build wheel & Create Release
+    name: Build artifacts
     runs-on: ubuntu-latest
     needs: testing
     outputs:
@@ -90,7 +90,7 @@ jobs:
       
 
   release:
-    name: Build wheel & Create Release
+    name: Create release and Upload artifacts with testing reports
     runs-on: ubuntu-latest
     needs: build
     permissions:
@@ -118,13 +118,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ steps.release-tag.outputs.name }}" -m "Release ${{ steps.release-tag.outputs.name }}"
-          git push origin "${{ steps.release-tag.outputs.name }}"
+          git tag -a "${{ needs.build.outputs.release-tag }}" -m "Release ${{ needs.build.outputs.release-tag }}"
+          git push origin "${{ needs.build.outputs.release-tag }}"
 
       - name: Create GitHub Release and upload wheel
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.release-tag.outputs.name }}
+          tag_name: ${{ needs.build.outputs.release-tag }}
           files: |
             dist/*.whl
             dist/*.tar.gz
