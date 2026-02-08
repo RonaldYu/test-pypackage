@@ -3,6 +3,7 @@ name: CD - Release
 run-name: "CD - Release | ${{ github.ref }} | ${{ github.event_name}} | ${{ github.run_number }}"
 on:
   push:
+
     branches:
       - main
 jobs:
@@ -34,10 +35,10 @@ jobs:
 
       - name: Build package with the version
         run: |
+          echo "VER: ${{ steps.version.outputs.version }}"
+          echo "TAG: ${{ steps.version.outputs.tag }}"
           VER="${{ steps.version.outputs.version }}"
-          if [ -z "$VER" ]; then
-            VER="${GITHUB_REF_NAME#v}"
-          fi
+          
           if [ -z "$VER" ]; then
             VER="0.0.0"
           fi
