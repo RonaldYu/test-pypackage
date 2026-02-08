@@ -1,9 +1,8 @@
-# CD: Build wheel and create GitHub Release when a version tag (v*) is pushed.
-# Trigger: push tag v1.0.0 (manually or by ci-dev after tests pass).
+# CD: Build wheel and create GitHub Release when a version tag (v*) is pushed, or when PR is merged to main.
 name: CD - Release
 run-name: "CD - Release | ${{ github.ref }} | ${{ github.event_name}} | ${{ github.run_number }}"
 on:
-  pull_request:
+  push:
     branches:
       - main
 jobs:

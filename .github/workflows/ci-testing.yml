@@ -45,7 +45,7 @@ jobs:
         run: python -m tests.checkresults
 
   tag-run-number:
-    name: Tag with run number
+    name: Tag with Run Number
     runs-on: ubuntu-latest
     needs: exec-testing
     permissions:
