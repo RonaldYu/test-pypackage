@@ -8,10 +8,8 @@ on:
       - 'v*'
 jobs:
 
-
   build-and-release:
     name: Build wheel & Create Release
-    needs: check-testing-results
     runs-on: ubuntu-latest
     permissions:
       contents: write
