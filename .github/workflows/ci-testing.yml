@@ -18,19 +18,16 @@ on:
 env:
   PYTHON_VERSION: "3.12"
   DEV_DEPENDENCIES_TAG: ".[dev]"
-  TEST_REPORTS_PATH: testing_reports/
-  TEST_REPORTS_NAME: test-reports
-  TEST_CASES_FOLDER_PATH: tests/
-  CHECK_TESTING_MODULE: tests.checkresults
+  TEST_REPORTS_PATH: "testing_reports/"
+  TEST_REPORTS_NAME: "test-reports"
+  TEST_CASES_FOLDER_PATH: "tests/"
+  CHECK_TESTING_MODULE: "tests.checkresults"
   
 jobs:
 
   testing:
     name: Test & Check Results
     runs-on: ubuntu-latest
-    env:
-      TEST_REPORTS_PATH: testing_reports/
-      TEST_REPORTS_NAME: test-reports
     steps:
       - name: Checkout
         uses: actions/checkout@v4

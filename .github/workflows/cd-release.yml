@@ -16,12 +16,12 @@ on:
 env:
   PYTHON_VERSION: "3.12"
   DEV_DEPENDENCIES_TAG: ".[dev]"
-  TEST_REPORTS_PATH: testing_reports/
-  TEST_REPORTS_NAME: test-reports
-  TEST_CASES_FOLDER_PATH: tests/
-  CHECK_TESTING_MODULE: tests.checkresults
-  BUILT_ARTIFACTS_NAME: built-artifacts
-  BUILT_ARTIFACTS_PATH: dist/
+  TEST_REPORTS_PATH: "testing_reports/"
+  TEST_REPORTS_NAME: "test-reports"
+  TEST_CASES_FOLDER_PATH: "tests/"
+  CHECK_TESTING_MODULE: "tests.checkresults"
+  BUILT_ARTIFACTS_NAME: "built-artifacts"
+  BUILT_ARTIFACTS_PATH: "dist/"
 
 jobs:
 
@@ -115,11 +115,11 @@ jobs:
     permissions:
       contents: write
     env:
-      RELEASE_VERSION: ${{ needs.build.outputs.release-version }}
-      RELEASE_TAG: ${{ needs.build.outputs.release-tag }}
-      ARTIFACT_WHEEL_PATH: ${{ env.BUILT_ARTIFACTS_PATH }}*.whl
-      ARTIFACT_TAR_GZ_PATH: ${{ env.BUILT_ARTIFACTS_PATH }}*.tar.gz
-      ARTIFACT_TESTING_REPORTS_PATH: ${{ env.TEST_REPORTS_PATH }}-${{ needs.build.outputs.release-version }}.zip
+      RELEASE_VERSION: "${{ needs.build.outputs.release-version }}"
+      RELEASE_TAG: "${{ needs.build.outputs.release-tag }}"
+      ARTIFACT_WHEEL_PATH: "${{ env.BUILT_ARTIFACTS_PATH }}*.whl"
+      ARTIFACT_TAR_GZ_PATH: "${{ env.BUILT_ARTIFACTS_PATH }}*.tar.gz"
+      ARTIFACT_TESTING_REPORTS_PATH: "${{ env.TEST_REPORTS_PATH }}-${{ needs.build.outputs.release-version }}.zip"
 
     steps:
       - name: Checkout
