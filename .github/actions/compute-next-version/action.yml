@@ -18,9 +18,10 @@ runs:
     - id: compute
       shell: bash
       run: |
+        
+        # Only match semver vX.Y.Z (digits only). git tag -l uses glob, so filter with grep -E
         PREFIX="${{ inputs.prefix }}"
-        PATTERN="${PREFIX}*"
-        LATEST=$(git tag -l "$PATTERN" --sort=-v:refname | head -1)
+        LATEST=$(git tag -l "${PREFIX}*" --sort=-v:refname | grep -E "^${PREFIX}[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
         if [ -z "$LATEST" ]; then
           VERSION="0.0.0"
         else
