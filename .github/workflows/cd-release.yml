@@ -91,7 +91,7 @@ jobs:
       
 
   release:
-    name: Create release and Upload artifacts with testing reports
+    name: Create release
     runs-on: ubuntu-latest
     needs: build
     permissions:
@@ -109,7 +109,7 @@ jobs:
           path: testing_reports
 
       - name: Zip testing reports
-        run: zip -r "testing_reports_${{ needs.build.outputs.release-version }}.zip" testing_reports
+        run: zip -r "testing_reports-${{ needs.build.outputs.release-version }}.zip" testing_reports
 
       - name: Download built artifacts
         uses: actions/download-artifact@v4
