@@ -42,7 +42,7 @@ jobs:
             VER="0.0.0"
           fi
           sed -i "s/^version = .*/version = \"$VER\"/" pyproject.toml
-          python -m build --wheel
+          python -m build
       
       - name: Create and push version tag
         run: |
@@ -55,7 +55,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          files: dist/
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
