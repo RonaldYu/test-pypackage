@@ -51,12 +51,10 @@ jobs:
           git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
 
-          git tag -a "release-${{ github.run_number }}" -m "Release run number: ${{ github.run_number }}"
-          git push origin "release-${{ github.run_number }}"
-
       - name: Create GitHub Release and upload wheel
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
           files: dist/
           generate_release_notes: true
         env:
