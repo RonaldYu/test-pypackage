@@ -42,7 +42,7 @@ jobs:
         run: python -m tests.checkresults
 
   build:
-    name: Build artifacts
+    name: Build Artifacts
     runs-on: ubuntu-latest
     needs: testing
     outputs:
@@ -97,7 +97,7 @@ jobs:
       
 
   release:
-    name: Create release
+    name: Create Release
     runs-on: ubuntu-latest
     needs: build
     permissions:
