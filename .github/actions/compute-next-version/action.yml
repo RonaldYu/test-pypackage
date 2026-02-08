@@ -5,8 +5,10 @@ description: Get latest v* tag and compute next version (patch+1, rollover at 99
 outputs:
   version:
     description: Next version string (e.g. 0.0.1)
+    value: ${{ steps.compute.outputs.version }}
   tag:
     description: Next tag with prefix (e.g. v0.0.1)
+    value: ${{ steps.compute.outputs.tag }}
 inputs:
   prefix:
     description: Tag prefix (default v)
