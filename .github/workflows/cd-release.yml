@@ -5,6 +5,12 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**/*.md'
+      - '.github/**'
+      - 'tests/**'
+      - '.gitignore'
+      - 'pyproject.toml'
 jobs:
 
   testing:
