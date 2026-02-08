@@ -20,9 +20,14 @@ runs:
     - id: compute
       shell: bash
       run: |
+        set -e
+        cd "${GITHUB_WORKSPACE:-.}"
+        git fetch --tags --force 2>/dev/null || true
         
         PREFIX="${{ inputs.prefix }}"
         LATEST=$(git tag -l "${PREFIX}*" --sort=-v:refname | grep -E "^${PREFIX}[0-9]+\.[0-9]+\.[0-9]+$" || true | head -1)
+        LATEST=$(echo "$LATEST" | tr -d '\r\n' | xargs)
+        
         if [ -z "$LATEST" ]; then
           VERSION="0.0.0"
         else
@@ -44,3 +49,4 @@ runs:
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "tag=${PREFIX}${VERSION}" >> $GITHUB_OUTPUT
+        echo "::notice::LATEST=$LATEST VERSION=$VERSION tag=${PREFIX}${VERSION}"
