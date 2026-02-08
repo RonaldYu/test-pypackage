@@ -12,7 +12,7 @@ on:
       - '.gitignore'
       - 'pyproject.toml'
 
-# 所有 job 都會繼承這裡的環境變數（單一 job 的 env 可覆蓋同名變數）
+
 env:
   PYTHON_VERSION: "3.12"
   DEV_DEPENDENCIES_TAG: ".[dev]"
@@ -114,27 +114,30 @@ jobs:
     needs: build
     permissions:
       contents: write
-    env:
-      RELEASE_VERSION: "${{ needs.build.outputs.release-version }}"
-      RELEASE_TAG: "${{ needs.build.outputs.release-tag }}"
-      ARTIFACT_WHEEL_PATH: "${{ env.BUILT_ARTIFACTS_PATH }}*.whl"
-      ARTIFACT_TAR_GZ_PATH: "${{ env.BUILT_ARTIFACTS_PATH }}*.tar.gz"
-      ARTIFACT_TESTING_REPORTS_PATH: "${{ env.TEST_REPORTS_PATH }}-${{ needs.build.outputs.release-version }}.zip"
-
+   
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      
+      - name: Set up variables
+        id: set-variables
+        run: |
+          
+          echo "ARTIFACT_WHEEL_PATH=${{ env.BUILT_ARTIFACTS_PATH }}*.whl" >> $GITHUB_OUTPUT
+          echo "ARTIFACT_TAR_GZ_PATH=${{ env.BUILT_ARTIFACTS_PATH }}*.tar.gz" >> $GITHUB_OUTPUT
+          echo "ARTIFACT_TESTING_REPORTS_PATH=${{ env.TEST_REPORTS_PATH }}-${{ needs.build.outputs.release-version }}.zip" >> $GITHUB_OUTPUT
 
       - name: Download test reports
         uses: actions/download-artifact@v4
         with:
           name: ${{ env.TEST_REPORTS_NAME }}
           path: ${{ env.TEST_REPORTS_PATH }}
+      
 
       - name: Zip testing reports
-        run: zip -r "${{ env.ARTIFACT_TESTING_REPORTS_PATH }}" ${{ env.TEST_REPORTS_PATH }}
+        run: zip -r "${{ steps.set-variables.outputs.ARTIFACT_TESTING_REPORTS_PATH }}" ${{ env.TEST_REPORTS_PATH }}
 
       - name: Download built artifacts
         uses: actions/download-artifact@v4
@@ -147,17 +150,17 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ env.RELEASE_TAG }}" -m "Release ${{ env.RELEASE_TAG }}"
-          git push origin "${{ env.RELEASE_TAG }}"
+          git tag -a "${{ needs.build.outputs.release-tag }}" -m "Release ${{ needs.build.outputs.release-tag }}"
+          git push origin "${{ needs.build.outputs.release-tag }}"
 
       - name: Create GitHub Release and upload wheel
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           files: |
-            ${{ env.ARTIFACT_WHEEL_PATH }}
-            ${{ env.ARTIFACT_TAR_GZ_PATH }}
-            ${{ env.ARTIFACT_TESTING_REPORTS_PATH }}
+            ${{ steps.set-variables.outputs.ARTIFACT_WHEEL_PATH }}
+            ${{ steps.set-variables.outputs.ARTIFACT_TAR_GZ_PATH }}
+            ${{ steps.set-variables.outputs.ARTIFACT_TESTING_REPORTS_PATH }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
