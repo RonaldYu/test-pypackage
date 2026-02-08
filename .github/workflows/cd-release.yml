@@ -3,9 +3,9 @@
 name: CD - Release
 run-name: "CD - Release | ${{ github.ref }} | ${{ github.event_name}} | ${{ github.run_number }}"
 on:
-  push:
-    tags:
-      - 'v*'
+  pull_request:
+    branches:
+      - main
 jobs:
 
   build-and-release:
@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -33,10 +35,17 @@ jobs:
 
       - name: Build package with the version
         run: |
-          sed -i 's/^version = .*/version = "${{ steps.version.outputs.version }}"/' pyproject.toml
+          VER="${{ steps.version.outputs.version }}"
+          if [ -z "$VER" ]; then
+            VER="${GITHUB_REF_NAME#v}"
+          fi
+          if [ -z "$VER" ]; then
+            VER="0.0.0"
+          fi
+          sed -i "s/^version = .*/version = \"$VER\"/" pyproject.toml
           python -m build --wheel
       
-      - name: Create and push versiontag tag
+      - name: Create and push version tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
