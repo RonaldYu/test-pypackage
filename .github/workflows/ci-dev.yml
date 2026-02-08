@@ -43,8 +43,8 @@ jobs:
       - name: Check testing results (pass rate & coverage)
         run: python -m tests.checkresults
 
-  tag-version:
-    name: Tag with version
+  tag-run-number:
+    name: Tag with run number
     runs-on: ubuntu-latest
     environment: dev
     needs: exec-testing
@@ -56,37 +56,12 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Compute next version
-        id: version
-        run: |
-          LATEST=$(git tag -l 'v*' --sort=-v:refname | head -1)
-          if [ -z "$LATEST" ]; then
-            VERSION="0.0.0"
-          else
-            VER="${LATEST#v}"
-            MAJOR="${VER%%.*}"
-            REST="${VER#*.}"
-            MINOR="${REST%%.*}"
-            PATCH="${REST#*.}"
-            PATCH=$((PATCH + 1))
-            if [ "$PATCH" -gt 99 ]; then
-              PATCH=0
-              MINOR=$((MINOR + 1))
-              if [ "$MINOR" -gt 99 ]; then
-                MINOR=0
-                MAJOR=$((MAJOR + 1))
-              fi
-            fi
-            VERSION="$MAJOR.$MINOR.$PATCH"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+        
 
       - name: Create and push tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          TAG="${{ steps.version.outputs.tag }}"
-          git tag -a "$TAG" -m "Release $TAG"
+          TAG="dev-${{ github.run_number }}"
+          git tag -a "$TAG" -m "dev run number: ${{ github.run_number }}"
           git push origin "$TAG"
