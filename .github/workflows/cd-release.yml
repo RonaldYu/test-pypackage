@@ -124,7 +124,7 @@ jobs:
       - name: Set up variables
         id: set-variables
         run: |
-          
+
           echo "ARTIFACT_WHEEL_PATH=${{ env.BUILT_ARTIFACTS_PATH }}*.whl" >> $GITHUB_OUTPUT
           echo "ARTIFACT_TAR_GZ_PATH=${{ env.BUILT_ARTIFACTS_PATH }}*.tar.gz" >> $GITHUB_OUTPUT
           echo "ARTIFACT_TESTING_REPORTS_PATH=${{ env.TEST_REPORTS_PATH }}-${{ needs.build.outputs.release-version }}.zip" >> $GITHUB_OUTPUT
@@ -156,7 +156,7 @@ jobs:
       - name: Create GitHub Release and upload wheel
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
+          tag_name: ${{ needs.build.outputs.release-tag }}
           files: |
             ${{ steps.set-variables.outputs.ARTIFACT_WHEEL_PATH }}
             ${{ steps.set-variables.outputs.ARTIFACT_TAR_GZ_PATH }}
