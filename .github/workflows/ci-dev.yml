@@ -6,7 +6,12 @@ on:
       - dev
     paths-ignore:
       - '**/*.md'
+      - '.github/**'
+      - 'tests/**'
+      - '.gitignore'
+      - 'pyproject.toml'
   pull_request:
+    branches:
       - dev
 jobs:
   check-merge:
@@ -78,7 +83,6 @@ jobs:
           if [ -z "$LATEST" ]; then
             VERSION="0.0.0"
           else
-            # Strip 'v' and increment patch: v0.0.5 → 0.0.6
             VER="${LATEST#v}"
             MAJOR="${VER%%.*}"
             REST="${VER#*.}"
