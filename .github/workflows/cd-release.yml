@@ -16,12 +16,12 @@ on:
 env:
   PYTHON_VERSION: "3.12"
   DEV_DEPENDENCIES_TAG: ".[dev]"
-  TEST_REPORTS_PATH: "testing_reports/"
+  TEST_REPORTS_PATH: "testing_reports"
   TEST_REPORTS_NAME: "test-reports"
-  TEST_CASES_FOLDER_PATH: "tests/"
+  TEST_CASES_FOLDER_PATH: "tests"
   CHECK_TESTING_MODULE: "tests.checkresults"
   BUILT_ARTIFACTS_NAME: "built-artifacts"
-  BUILT_ARTIFACTS_PATH: "dist/"
+  BUILT_ARTIFACTS_PATH: "dist"
 
 jobs:
 
@@ -41,13 +41,13 @@ jobs:
         run: pip install -e "${{ env.DEV_DEPENDENCIES_TAG }}"
 
       - name: Run testing
-        run: pytest ${{ env.TEST_CASES_FOLDER_PATH }} -v
+        run: pytest ${{ env.TEST_CASES_FOLDER_PATH }}/ -v
 
       - name: Upload testing reports (JUnit XML/HTML, Coverage XML/HTML)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.TEST_REPORTS_NAME }}
-          path: ${{ env.TEST_REPORTS_PATH }}
+          path: ${{ env.TEST_REPORTS_PATH }}/
           retention-days: 30
 
       - name: Check testing results (pass rate & coverage)
@@ -104,7 +104,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BUILT_ARTIFACTS_NAME }}
-          path: ${{ env.BUILT_ARTIFACTS_PATH }}
+          path: ${{ env.BUILT_ARTIFACTS_PATH }}/
           retention-days: 30
       
 
@@ -125,25 +125,25 @@ jobs:
         id: set-variables
         run: |
 
-          echo "ARTIFACT_WHEEL_PATH=${{ env.BUILT_ARTIFACTS_PATH }}*.whl" >> $GITHUB_OUTPUT
-          echo "ARTIFACT_TAR_GZ_PATH=${{ env.BUILT_ARTIFACTS_PATH }}*.tar.gz" >> $GITHUB_OUTPUT
+          echo "ARTIFACT_WHEEL_PATH=${{ env.BUILT_ARTIFACTS_PATH }}/*.whl" >> $GITHUB_OUTPUT
+          echo "ARTIFACT_TAR_GZ_PATH=${{ env.BUILT_ARTIFACTS_PATH }}/*.tar.gz" >> $GITHUB_OUTPUT
           echo "ARTIFACT_TESTING_REPORTS_PATH=${{ env.TEST_REPORTS_PATH }}-${{ needs.build.outputs.release-version }}.zip" >> $GITHUB_OUTPUT
 
       - name: Download test reports
         uses: actions/download-artifact@v4
         with:
           name: ${{ env.TEST_REPORTS_NAME }}
-          path: ${{ env.TEST_REPORTS_PATH }}
+          path: ${{ env.TEST_REPORTS_PATH }}/
       
 
       - name: Zip testing reports
-        run: zip -r "${{ steps.set-variables.outputs.ARTIFACT_TESTING_REPORTS_PATH }}" ${{ env.TEST_REPORTS_PATH }}
+        run: zip -r "${{ steps.set-variables.outputs.ARTIFACT_TESTING_REPORTS_PATH }}" ${{ env.TEST_REPORTS_PATH }}/
 
       - name: Download built artifacts
         uses: actions/download-artifact@v4
         with:
           name: ${{ env.BUILT_ARTIFACTS_NAME }}
-          path: ${{ env.BUILT_ARTIFACTS_PATH }}
+          path: ${{ env.BUILT_ARTIFACTS_PATH }}/
 
       
       - name: Create and push version tag

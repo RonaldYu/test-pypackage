@@ -13,7 +13,7 @@ def comm_config(
         if comm_id is None or comm_name is None or comm_type is None or comm_status is None or comm_created_at is None or comm_updated_at is None:
             raise ValueError("All fields are required")
         else:
-            
+            #x
             return Comm(
                 comm_id=comm_id,
                 comm_name=comm_name,

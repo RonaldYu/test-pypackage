@@ -18,9 +18,9 @@ on:
 env:
   PYTHON_VERSION: "3.12"
   DEV_DEPENDENCIES_TAG: ".[dev]"
-  TEST_REPORTS_PATH: "testing_reports/"
+  TEST_REPORTS_PATH: "testing_reports"
   TEST_REPORTS_NAME: "test-reports"
-  TEST_CASES_FOLDER_PATH: "tests/"
+  TEST_CASES_FOLDER_PATH: "tests"
   CHECK_TESTING_MODULE: "tests.checkresults"
   
 jobs:
@@ -41,13 +41,13 @@ jobs:
         run: pip install -e "${{ env.DEV_DEPENDENCIES_TAG }}"
 
       - name: Run testing
-        run: pytest ${{ env.TEST_CASES_FOLDER_PATH }} -v
+        run: pytest ${{ env.TEST_CASES_FOLDER_PATH }}/ -v
 
       - name: Upload testing reports (JUnit XML/HTML, Coverage XML/HTML)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.TEST_REPORTS_NAME }}
-          path: ${{ env.TEST_REPORTS_PATH }}
+          path: ${{ env.TEST_REPORTS_PATH }}/
           retention-days: 30
 
       - name: Check testing results (pass rate & coverage)
