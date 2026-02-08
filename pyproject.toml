@@ -72,4 +72,4 @@ pass_rate = 1.0
 # cov_line_rate: 0~1, 1.0 表示 100% 覆蓋
 cov_line_rate = 0.8
 # cov_branch_rate: 0~1, 1.0 表示 100% 分支覆蓋
-cov_branch_rate = 0.3
+cov_branch_rate = 0.9

@@ -14,29 +14,10 @@ on:
     branches:
       - dev
 jobs:
-  check-merge:
-    runs-on: ubuntu-latest
-    outputs:
-      skip_workflow: ${{ steps.check.outputs.skip_workflow }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch all branches
-      - id: check
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/develop" ]] && \
-             [[ "$(git log -1 --pretty=%P | wc -w)" == "2" ]] && \
-             git log -1 --pretty=%P | grep -q "$(git rev-parse origin/feature/deploy-dev)"; then
-            echo "skip_workflow=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip_workflow=false" >> $GITHUB_OUTPUT
-          fi
 
   exec-testing:
     name: Test & Check Results
     runs-on: ubuntu-latest
-    needs: check-merge
-    if: needs.check-merge.outputs.skip_workflow == 'false'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
