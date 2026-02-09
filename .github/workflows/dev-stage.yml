@@ -1,5 +1,5 @@
-name: CI - Dev Staging
-run-name: "CI - Dev Staging | ${{ github.ref }} | ${{ github.event_name}} | ${{ github.run_number }}"
+name: Dev Stage
+run-name: "Dev Stage | ${{ github.ref }} | ${{ github.event_name}} | ${{ github.run_number }}"
 
 on:
   push:

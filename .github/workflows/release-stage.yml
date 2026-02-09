@@ -1,0 +1,84 @@
+# Release stage: create GitHub Release when Build Stage completes successfully on main.
+# Triggered by workflow_run from build-stage.yml.
+name: Release Stage
+run-name: "Release Stage | ${{ github.event.workflow_run.display_title }} | ${{ github.run_number }}"
+on:
+  workflow_run:
+    workflows: ["Build Stage"]
+    types: [completed]
+    branches: [main]
+
+env:
+  BUILT_ARTIFACTS_PATH: "dist"
+  TEST_REPORTS_PATH: "testing_reports"
+  TEST_REPORTS_NAME: "test-reports"
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release info
+        uses: actions/download-artifact@v4
+        with:
+          name: release-info
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Set release tag and version
+        id: release-info
+        run: |
+          echo "tag=$(cat release-info/tag.txt)" >> $GITHUB_OUTPUT
+          echo "version=$(cat release-info/version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Set up variables
+        id: set-variables
+        run: |
+          echo "ARTIFACT_WHEEL_PATH=${{ env.BUILT_ARTIFACTS_PATH }}/*.whl" >> $GITHUB_OUTPUT
+          echo "ARTIFACT_TAR_GZ_PATH=${{ env.BUILT_ARTIFACTS_PATH }}/*.tar.gz" >> $GITHUB_OUTPUT
+          echo "ARTIFACT_TESTING_REPORTS_PATH=${{ env.TEST_REPORTS_PATH }}-${{ steps.release-info.outputs.version }}.zip" >> $GITHUB_OUTPUT
+
+      - name: Download test reports
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.TEST_REPORTS_NAME }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: ${{ env.TEST_REPORTS_PATH }}/
+
+      - name: Zip testing reports
+        run: zip -r "${{ steps.set-variables.outputs.ARTIFACT_TESTING_REPORTS_PATH }}" ${{ env.TEST_REPORTS_PATH }}/
+
+      - name: Download built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: built-artifacts
+          run-id: ${{ github.event.workflow_run.id }}
+          path: ${{ env.BUILT_ARTIFACTS_PATH }}/
+
+      - name: Checkout (for git tag)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Create and push version tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.release-info.outputs.tag }}" -m "Release ${{ steps.release-info.outputs.tag }}"
+          git push origin "${{ steps.release-info.outputs.tag }}"
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release-info.outputs.tag }}
+          files: |
+            ${{ steps.set-variables.outputs.ARTIFACT_WHEEL_PATH }}
+            ${{ steps.set-variables.outputs.ARTIFACT_TAR_GZ_PATH }}
+            ${{ steps.set-variables.outputs.ARTIFACT_TESTING_REPORTS_PATH }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

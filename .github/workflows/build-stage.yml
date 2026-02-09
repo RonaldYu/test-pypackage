@@ -1,0 +1,119 @@
+# Build stage: test and build artifacts on push to main.
+# Release is handled by release-stage.yml (triggered when this workflow completes).
+name: Build Stage
+run-name: "Build Stage | ${{ github.ref }} | ${{ github.event_name}} | ${{ github.run_number }}"
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - '.github/**'
+      - 'tests/**'
+      - '.gitignore'
+      - 'pyproject.toml'
+
+env:
+  PYTHON_VERSION: "3.12"
+  DEV_DEPENDENCIES_TAG: ".[dev]"
+  TEST_REPORTS_PATH: "testing_reports"
+  TEST_REPORTS_NAME: "test-reports"
+  TEST_CASES_FOLDER_PATH: "tests"
+  CHECK_TESTING_MODULE: "tests.checkresults"
+  BUILT_ARTIFACTS_NAME: "built-artifacts"
+  BUILT_ARTIFACTS_PATH: "dist"
+
+jobs:
+
+  testing:
+    name: Test & Check Results
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "${{ env.PYTHON_VERSION }}"
+
+      - name: Install package with dev dependencies
+        run: pip install -e "${{ env.DEV_DEPENDENCIES_TAG }}"
+
+      - name: Run testing
+        run: pytest ${{ env.TEST_CASES_FOLDER_PATH }}/ -v
+
+      - name: Upload testing reports (JUnit XML/HTML, Coverage XML/HTML)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.TEST_REPORTS_NAME }}
+          path: ${{ env.TEST_REPORTS_PATH }}/
+          retention-days: 30
+
+      - name: Check testing results (pass rate & coverage)
+        run: python -m ${{ env.CHECK_TESTING_MODULE }}
+
+  build:
+    name: Build Artifacts
+    runs-on: ubuntu-latest
+    needs: testing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "${{ env.PYTHON_VERSION }}"
+
+      - name: Install build deps
+        run: pip install build
+
+      - name: Get the next version
+        id: version
+        uses: ./.github/actions/repo-semver
+        with:
+          bump: patch
+
+      - name: Set release tag
+        id: release-tag
+        run: |
+          PREFIX="${{ steps.version.outputs.prefix }}"
+          BUMP="${{ steps.version.outputs.bump }}"
+          [ -z "$PREFIX" ] && PREFIX="v"
+          
+          if [ -z "$BUMP" ]; then BUMP="0.0.0"; fi
+
+
+          echo "name=${PREFIX}${BUMP}" >> $GITHUB_OUTPUT
+          echo "version=${BUMP}" >> $GITHUB_OUTPUT
+          
+
+      - name: Build package with the version
+        run: |
+          sed -i "s/^version = .*/version = \"${{ steps.release-tag.outputs.version }}\"/" pyproject.toml
+          python -m build
+      
+      - name: Upload built artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILT_ARTIFACTS_NAME }}
+          path: ${{ env.BUILT_ARTIFACTS_PATH }}/
+          retention-days: 30
+
+      - name: Upload release info (for release-stage)
+        id: release-info
+        run: |
+          mkdir -p release-info
+          echo "${{ steps.release-tag.outputs.name }}" > release-info/tag.txt
+          echo "${{ steps.release-tag.outputs.version }}" > release-info/version.txt
+        
+
+      - name: Upload release info artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-info
+          path: release-info/
+          retention-days: 7
