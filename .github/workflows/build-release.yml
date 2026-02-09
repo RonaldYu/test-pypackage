@@ -136,15 +136,6 @@ jobs:
         with:
           name: ${{ env.BUILT_ARTIFACTS_NAME }}
           path: ${{ env.BUILT_ARTIFACTS_PATH }}/
-
-      
-      - name: Create and push version tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ needs.validate.outputs.tag_name }}" -m "Release ${{ needs.validate.outputs.tag_name }}"
-          git push origin "${{ needs.validate.outputs.tag_name }}"
-
       - name: Create GitHub Release and upload wheel
         uses: softprops/action-gh-release@v2
         with:
