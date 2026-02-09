@@ -1,0 +1,85 @@
+name: Validate Tag
+description: Validate the release tag
+inputs:
+  tag_name:
+    type: string
+    description: The name of the tag to validate
+    required: true
+  base_branch:
+    type: string
+    description: The base branch to compare the tag to
+    required: false
+outputs:
+  validate_status:
+    description: The status of the validation
+    value: ${{ steps.check-final-validation-status.outputs.validate_status }}
+  tag_name:
+    description: The name of the tag
+    value: ${{ steps.check-final-validation-status.outputs.tag_name }}
+  version:
+    description: The version of the tag
+    value: ${{ steps.check-final-validation-status.outputs.version }}
+runs:
+  using: composite
+  steps:
+    - name: Check the current tag commit
+      id: check-current-tag-commit
+      shell: bash
+      run: |
+        current_tag_commit=$(git rev-parse ${{ inputs.tag_name }} 2/dev/null || echo "")
+        if [ -z "$current_tag_commit" ]; then
+          echo "The tag ${{ inputs.tag_name }} does not exist"
+          exit 1
+        fi
+        echo "current_tag_commit=$current_tag_commit" >> $GITHUB_OUTPUT
+        echo "check_status=true" >> $GITHUB_OUTPUT
+    
+    - name: Check the tag format
+      id: check-tag-format
+      shell: bash
+      run: |
+        if ! echo ${{ inputs.tag_name }} | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' >/dev/null 2>&1; then
+          echo "The tag ${{ inputs.tag_name }} is not in the correct format"
+          exit 1
+        fi
+        echo "check_status=true" >> $GITHUB_OUTPUT
+    
+    - name: Check the commit is in the base branch
+      id: check-commit-in-base-branch
+      shell: bash
+      run: |
+        is_in_base_branch=$(git merge-base --is-ancestor ${{ steps.check-current-tag-commit.outputs.current_tag_commit }} ${{ inputs.base_branch }} >/dev/null 2>&1 || echo "0")
+        if [ "$is_in_base_branch" -eq "0" ]; then
+          echo "The commit ${{ inputs.tag_name }} is not in the base branch ${{ inputs.base_branch }}"
+          exit 1
+        fi
+        echo "check_status=true" >> $GITHUB_OUTPUT
+    - name: Check the tag is the latest tag
+      id: check-tag-is-latest-tag
+      shell: bash
+      run: |
+
+        latest_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |sort -V |tail -n 1)"
+
+        if [ "$latest_tag" != "${{ inputs.tag_name }}" ]; then
+          echo "The tag ${{ inputs.tag_name }} is not the latest tag"
+          exit 1
+        fi
+        echo "check_status=true" >> $GITHUB_OUTPUT
+        
+    - name: Set the output values
+      id: check-final-validation-status
+      shell: bash
+      run: |
+        tag_name="${{ inputs.tag_name }}"
+        version="${tag_name#v}"
+
+        validate_status="false"
+        if [ "${{ steps.check-current-tag-commit.outputs.check_status }}" == "true" ] && [ "${{ steps.check-tag-format.outputs.check_status }}" == "true" ] && [ "${{ steps.check-commit-in-base-branch.outputs.check_status }}" == "true" ] && [ "${{ steps.check-tag-is-latest-tag.outputs.check_status }}" == "true" ]; then
+          validate_status="true"
+        fi
+
+        echo "validate_status=$validate_status" >> $GITHUB_OUTPUT
+        echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
+        echo "version=$version" >> $GITHUB_OUTPUT
+        

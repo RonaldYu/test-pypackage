@@ -1,0 +1,158 @@
+name: Build & Release Stage
+run-name: "Build & Release Stage | ${{ github.ref }} | ${{ github.event_name}} | ${{ github.run_number }}"
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+env:
+  PYTHON_VERSION: "3.12"
+  DEV_DEPENDENCIES_TAG: ".[dev]"
+  TEST_REPORTS_PATH: "testing_reports"
+  TEST_REPORTS_NAME: "test-reports"
+  TEST_CASES_FOLDER_PATH: "tests"
+  CHECK_TESTING_MODULE: "tests.checkresults"
+  BUILT_ARTIFACTS_NAME: "built-artifacts"
+  BUILT_ARTIFACTS_PATH: "dist"
+
+jobs:
+
+  validate:
+    name: Validate Release Tag
+    runs-on: ubuntu-latest
+    outputs:
+      validate_status: ${{ steps.validate-tag.outputs.validate_status }}
+      tag_name: ${{ steps.validate-tag.outputs.tag_name }}
+      version: ${{ steps.validate-tag.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Validate release tag
+        id: validate-tag
+        uses: ./.github/actions/validate-tag
+        with:
+          tag_name: "${{ github.ref_name }}"
+          base_branch: main
+  
+  testing:
+    name: Test & Check Results
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.validate_status == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "${{ env.PYTHON_VERSION }}"
+
+      - name: Install package with dev dependencies
+        run: pip install -e "${{ env.DEV_DEPENDENCIES_TAG }}"
+
+      - name: Run testing
+        run: pytest ${{ env.TEST_CASES_FOLDER_PATH }}/ -v
+
+      - name: Upload testing reports (JUnit XML/HTML, Coverage XML/HTML)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.TEST_REPORTS_NAME }}
+          path: ${{ env.TEST_REPORTS_PATH }}/
+          retention-days: 30
+
+      - name: Check testing results (pass rate & coverage)
+        run: python -m ${{ env.CHECK_TESTING_MODULE }}
+
+  build:
+    name: Build Artifacts
+    runs-on: ubuntu-latest
+    needs: [testing, validate]
+    if: needs.validate.outputs.validate_status == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "${{ env.PYTHON_VERSION }}"
+
+      - name: Install build deps
+        run: pip install build
+
+      - name: Build package with the version
+        run: |
+          sed -i "s/^version = .*/version = \"${{ needs.validate.outputs.version }}\"/" pyproject.toml
+          python -m build
+      
+      - name: Upload built artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILT_ARTIFACTS_NAME }}
+          path: ${{ env.BUILT_ARTIFACTS_PATH }}/
+          retention-days: 30
+      
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build, validate]
+    if: needs.validate.outputs.validate_status == 'true'
+    permissions:
+      contents: write
+   
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up variables
+        id: set-variables
+        run: |
+
+          echo "ARTIFACT_WHEEL_PATH=${{ env.BUILT_ARTIFACTS_PATH }}/*.whl" >> $GITHUB_OUTPUT
+          echo "ARTIFACT_TAR_GZ_PATH=${{ env.BUILT_ARTIFACTS_PATH }}/*.tar.gz" >> $GITHUB_OUTPUT
+          echo "ARTIFACT_TESTING_REPORTS_PATH=${{ env.TEST_REPORTS_PATH }}-${{ needs.validate.outputs.version }}.zip" >> $GITHUB_OUTPUT
+
+      - name: Download test reports
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.TEST_REPORTS_NAME }}
+          path: ${{ env.TEST_REPORTS_PATH }}/
+      
+
+      - name: Zip testing reports
+        run: zip -r "${{ steps.set-variables.outputs.ARTIFACT_TESTING_REPORTS_PATH }}" ${{ env.TEST_REPORTS_PATH }}/
+
+      - name: Download built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.BUILT_ARTIFACTS_NAME }}
+          path: ${{ env.BUILT_ARTIFACTS_PATH }}/
+
+      
+      - name: Create and push version tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ needs.validate.outputs.tag_name }}" -m "Release ${{ needs.validate.outputs.tag_name }}"
+          git push origin "${{ needs.validate.outputs.tag_name }}"
+
+      - name: Create GitHub Release and upload wheel
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate.outputs.tag_name }}
+          files: |
+            ${{ steps.set-variables.outputs.ARTIFACT_WHEEL_PATH }}
+            ${{ steps.set-variables.outputs.ARTIFACT_TAR_GZ_PATH }}
+            ${{ steps.set-variables.outputs.ARTIFACT_TESTING_REPORTS_PATH }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
