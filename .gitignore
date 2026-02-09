@@ -16,6 +16,10 @@ build/
 *.egg-info/
 *.egg
 
+!.github/**/dist/
+!.github/**/dist/**
+
+
 # pytest
 .pytest_cache/
 .coverage
