@@ -26,7 +26,7 @@ runs:
       id: check-current-tag-commit
       shell: bash
       run: |
-        current_tag_commit=$(git rev-parse ${{ inputs.tag_name }} 2/dev/null || echo "")
+        current_tag_commit=$(git rev-parse ${{ inputs.tag_name }} 2>/dev/null || echo "")
         if [ -z "$current_tag_commit" ]; then
           echo "The tag ${{ inputs.tag_name }} does not exist"
           exit 1
