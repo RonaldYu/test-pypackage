@@ -16,8 +16,8 @@ build/
 *.egg-info/
 *.egg
 
-!.github/dist/
-!.github/dist/**
+!.github/**/dist/
+!.github/**/dist/**
 
 
 # pytest
