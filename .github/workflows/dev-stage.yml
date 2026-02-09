@@ -11,9 +11,7 @@ on:
       - 'tests/**'
       - '.gitignore'
       - 'pyproject.toml'
-  pull_request:
-    branches:
-      - develop
+    
 
 env:
   PYTHON_VERSION: "3.12"
