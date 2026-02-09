@@ -4,7 +4,7 @@ run-name: "Dev Stage | ${{ github.ref }} | ${{ github.event_name}} | ${{ github.
 on:
   push:
     branches: 
-      - dev
+      - develop
     paths-ignore:
       - '**/*.md'
       - '.github/**'
@@ -13,7 +13,7 @@ on:
       - 'pyproject.toml'
   pull_request:
     branches:
-      - dev
+      - develop
 
 env:
   PYTHON_VERSION: "3.12"
