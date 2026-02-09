@@ -9,6 +9,9 @@ on:
     branches: [main]
 
 env:
+  RELEASE_INFO_NAME: "release-info"
+  RELEAGE_INFO_TAG_PATH: "release-info/tag.txt"
+  RELEAGE_INFO_VERSION_PATH: "release-info/version.txt"
   BUILT_ARTIFACTS_PATH: "dist"
   TEST_REPORTS_PATH: "testing_reports"
   TEST_REPORTS_NAME: "test-reports"
@@ -25,14 +28,15 @@ jobs:
       - name: Download release info
         uses: actions/download-artifact@v4
         with:
-          name: release-info
+          name: ${{ env.RELEASE_INFO_NAME }}
           run-id: ${{ github.event.workflow_run.id }}
+          path: ${{ env.RELEASE_INFO_PATH }}/
 
       - name: Set release tag and version
         id: release-info
         run: |
-          echo "tag=$(cat release-info/tag.txt)" >> $GITHUB_OUTPUT
-          echo "version=$(cat release-info/version.txt)" >> $GITHUB_OUTPUT
+          echo "tag=$(cat ${{ env.RELEASE_INFO_TAG_PATH }})" >> $GITHUB_OUTPUT
+          echo "version=$(cat ${{ env.RELEASE_INFO_VERSION_PATH }})" >> $GITHUB_OUTPUT
 
       - name: Set up variables
         id: set-variables
@@ -61,7 +65,6 @@ jobs:
       - name: Checkout (for git tag)
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
 
       - name: Create and push version tag
