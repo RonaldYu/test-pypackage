@@ -22,6 +22,7 @@ env:
   CHECK_TESTING_MODULE: "tests.checkresults"
   BUILT_ARTIFACTS_NAME: "built-artifacts"
   BUILT_ARTIFACTS_PATH: "dist"
+  RELEASE_INFO_PATH: "release-info"
 
 jobs:
 
@@ -106,14 +107,14 @@ jobs:
       - name: Upload release info (for release-stage)
         id: release-info
         run: |
-          mkdir -p release-info
-          echo "${{ steps.release-tag.outputs.name }}" > release-info/tag.txt
-          echo "${{ steps.release-tag.outputs.version }}" > release-info/version.txt
+          mkdir -p ${{ env.RELEASE_INFO_PATH }}
+          echo "${{ steps.release-tag.outputs.name }}" > ${{ env.RELEASE_INFO_PATH }}/tag.txt
+          echo "${{ steps.release-tag.outputs.version }}" > ${{ env.RELEASE_INFO_PATH }}/version.txt
         
 
       - name: Upload release info artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-info
-          path: release-info/
+          path: ${{ env.RELEASE_INFO_PATH }}/
           retention-days: 7
